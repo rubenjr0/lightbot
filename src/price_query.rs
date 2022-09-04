@@ -13,6 +13,7 @@ pub async fn get_price(endpoint: Endpoint) -> Result<PriceQuery, reqwest::Error>
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct PriceQuery {
+    date: String,
     price: f32,
     is_cheap: Option<bool>,
     is_under_avg: Option<bool>,
@@ -20,8 +21,12 @@ pub struct PriceQuery {
 }
 
 impl PriceQuery {
+    pub fn date(&self) -> &str {
+        &self.date
+    }
+
     pub fn price(&self) -> f32 {
-        self.price
+        self.price / 1000.0
     }
 
     pub fn hour(&self) -> Option<(u8, u8)> {
@@ -41,8 +46,8 @@ impl Display for PriceQuery {
         let is_under_avg = self.is_under_avg.ok_or(std::fmt::Error)?;
         write!(
             f,
-            "{:.3}€ por kWh, {}",
-            self.price / 1000.0,
+            "{:.3}€, {}",
+            self.price(),
             if is_cheap {
                 "barata"
             } else if is_under_avg {

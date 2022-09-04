@@ -26,8 +26,12 @@ impl DayQuery {
 
 impl Display for DayQuery {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (min_starting_time, min_ending_time) = self.min.hour().ok_or(Error)?;
-        let (max_starting_time, max_ending_time) = self.max.hour().ok_or(Error)?;
-        write!(f, "Precio más bajo: {:.3} € por kWh, de {:2} a {:2}\nPrecio más alto: {:.3} € por kWh, de {:2} a {:2}\nPrecio medio: {} € por kWh", self.min.price(), min_starting_time, min_ending_time, self.max.price(), max_starting_time, max_ending_time, self.avg.price())
+        let date = self.avg.date();
+        let mnp = self.min.price();
+        let mxp = self.max.price();
+        let avp = self.avg.price();
+        let (mnst, mnet) = self.min.hour().ok_or(Error)?;
+        let (mxst, mxet) = self.max.hour().ok_or(Error)?;
+        write!(f, "Precio de la luz a {date}\nPrecio más bajo: {mnp:.3}€, de {mnst:2} a {mnet:2}\nPrecio más alto: {mxp:.3}€, de {mxst:2} a {mxet:2}\nPrecio medio: {avp:.3}€")
     }
 }

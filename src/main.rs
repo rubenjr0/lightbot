@@ -15,7 +15,10 @@ use endpoint::Endpoint;
 use price_query::get_price;
 
 #[derive(BotCommands, Clone, Debug)]
-#[command(rename = "lowercase", description = "Comandos disponibles:")]
+#[command(
+    rename = "lowercase",
+    description = "Comandos disponibles. Todos los precios estan en € por kWh."
+)]
 enum Command {
     Luz,
     Dia,
@@ -25,21 +28,21 @@ enum Command {
 #[tokio::main]
 async fn main() {
     let subscriber = FmtSubscriber::builder()
-        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
-        // will be written to stdout.
         .with_max_level(Level::INFO)
-        // completes the builder.
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    dotenv().ok();
-
     info!("Creating bot...");
+    dotenv().ok();
     let bot = Bot::from_env().auto_send();
 
     info!("Starting bot...");
     teloxide::commands_repl(bot, answer, Command::ty()).await;
+}
+
+fn report_duration(start: Instant) {
+    info!("Price request attended in {:.2?}", (Instant::now() - start));
 }
 
 async fn answer(
@@ -47,43 +50,37 @@ async fn answer(
     message: Message,
     command: Command,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let start = Instant::now();
     let sender = if message.chat.is_group() {
         message.chat.title().unwrap()
     } else {
         message.chat.username().unwrap()
     };
     info!("Request from {} -> [{:?}]", sender, command);
-    match command {
-        Command::Help => {
-            bot.send_message(message.chat.id, Command::descriptions().to_string())
-                .await?
-        }
-        Command::Luz => {
-            let start = Instant::now();
-            let response = if let Ok(price) = get_price(Endpoint::Now).await {
-                bot.send_message(message.chat.id, format!("{price}"))
-                    .await?
-            } else {
-                bot.send_message(message.chat.id, format!("Se ha producido un error"))
-                    .await?
-            };
-            info!("Price request attended in {:?}", (Instant::now() - start));
-            response
-        }
-        Command::Dia => {
-            let start = Instant::now();
-            let response = match DayQuery::new().await {
-                Ok(day) => bot.send_message(message.chat.id, format!("{day}")).await?,
-                Err(er) => {
-                    error!("{er}");
-                    bot.send_message(message.chat.id, format!("Se ha producido un error"))
-                        .await?
-                }
-            };
-            info!("Day request attended in {:?}", (Instant::now() - start));
-            response
-        }
+    let reply = match command {
+        Command::Help => Command::descriptions().to_string(),
+        Command::Luz => match get_price(Endpoint::Now).await {
+            Ok(price) => price.to_string(),
+            Err(error) => {
+                error!("{error}");
+                String::from("Se ha producido un error")
+            }
+        },
+        Command::Dia => match DayQuery::new().await {
+            Ok(day) => day.to_string(),
+            Err(error) => {
+                error!("{error}");
+                String::from("Se ha producido un error")
+            }
+        },
     };
+
+    bot.send_message(message.chat.id, reply)
+        .reply_to_message_id(message.id)
+        .disable_notification(true)
+        .await?;
+
+    report_duration(start);
 
     Ok(())
 }
