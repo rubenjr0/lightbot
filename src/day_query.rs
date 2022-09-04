@@ -32,6 +32,6 @@ impl Display for DayQuery {
         let avp = self.avg.price();
         let (mnst, mnet) = self.min.hour().ok_or(Error)?;
         let (mxst, mxet) = self.max.hour().ok_or(Error)?;
-        write!(f, "Precio de la luz a {date}\nPrecio más bajo: {mnp:.3}€, de {mnst:2} a {mnet:2}\nPrecio más alto: {mxp:.3}€, de {mxst:2} a {mxet:2}\nPrecio medio: {avp:.3}€")
+        write!(f, "Precio de la luz a {date}\nMínimo: {mnp:.3}€, de {mnst:02} a {mnet:02}\nMáximo: {mxp:.3}€, de {mxst:02} a {mxet:02}\nMedia: {avp:.3}€")
     }
 }
