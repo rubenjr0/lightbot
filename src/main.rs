@@ -51,12 +51,13 @@ async fn answer(
     command: Command,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let start = Instant::now();
-    let sender = if message.chat.is_group() {
-        message.chat.title().unwrap()
+    if let Some(sender) = if message.chat.is_group() {
+        message.chat.title()
     } else {
-        message.chat.username().unwrap()
-    };
-    info!("Request from {} -> [{:?}]", sender, command);
+        message.chat.username()
+    } {
+        info!("Request from {} -> [{:?}]", sender, command);
+    }
     let reply = match command {
         Command::Help => Command::descriptions().to_string(),
         Command::Luz => match get_price(Endpoint::Now).await {
