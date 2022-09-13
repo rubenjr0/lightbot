@@ -57,6 +57,8 @@ async fn answer(
         message.chat.username()
     } {
         info!("Request from {} -> [{:?}]", sender, command);
+    } else {
+        info!("Request from unknown sender -> [{:?}]", command);
     }
     let reply = match command {
         Command::Help => Command::descriptions().to_string(),
