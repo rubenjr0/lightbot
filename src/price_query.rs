@@ -10,7 +10,7 @@ pub async fn get_price(endpoint: Endpoint) -> Result<PriceQuery, reqwest::Error>
     Ok(query)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct PriceQuery {
     date: String,
