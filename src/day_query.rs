@@ -24,7 +24,7 @@ impl DayQuery {
     }
 
     pub fn date(&self) -> &str {
-       self.avg.date()
+        self.avg.date()
     }
 }
 
