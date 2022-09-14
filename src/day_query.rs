@@ -7,7 +7,7 @@ use crate::{
     price_query::{get_price, PriceQuery},
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DayQuery {
     min: PriceQuery,
@@ -21,6 +21,10 @@ impl DayQuery {
         let max = get_price(Endpoint::Max).await?;
         let avg = get_price(Endpoint::Avg).await?;
         Ok(DayQuery { min, avg, max })
+    }
+
+    pub fn date(&self) -> &str {
+       self.avg.date()
     }
 }
 
