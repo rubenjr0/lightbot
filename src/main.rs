@@ -1,7 +1,7 @@
 use std::{error::Error, sync::Arc, time::Instant};
 
 use cache::Cache;
-use chrono::{Datelike, NaiveDate, Timelike};
+use chrono::{Datelike, NaiveDate, Timelike, DateTime, Local};
 use day_query::DayQuery;
 use dotenv::dotenv;
 
@@ -96,7 +96,8 @@ async fn answer(
     day_cache: Cache<DayQuery>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let start = Instant::now();
-    let message_dt = message.date;
+    let message_dt: DateTime<Local> = DateTime::from(message.date);
+    dbg!(&message_dt);
 
     if let Some(sender) = if message.chat.is_group() {
         message.chat.title()
@@ -116,7 +117,11 @@ async fn answer(
             } else {
                 let price_query = lock.as_ref().unwrap();
                 let (_, end) = price_query.hour().unwrap();
-                if message_dt.time().hour() > end as u32 {
+                info!(
+                    "Cache end's time is {end}, and the current message was sent at {}",
+                    message_dt.time().hour()
+                );
+                if message_dt.time().hour() >= end as u32 {
                     update_price_cache(&mut lock).await
                 } else {
                     info!("Cache hit on price data");
@@ -133,7 +138,7 @@ async fn answer(
                 let day_date = NaiveDate::parse_from_str(day_query.date(), "%d-%m-%Y")
                     .unwrap()
                     .day();
-                if message_dt.naive_utc().day() > day_date {
+                if message_dt.day() > day_date {
                     update_day_cache(&mut lock).await
                 } else {
                     info!("Cache hit on day data");
