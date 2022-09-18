@@ -1,7 +1,7 @@
 use std::{error::Error, sync::Arc, time::Instant};
 
 use cache::Cache;
-use chrono::{Datelike, NaiveDate, Timelike, DateTime, Local};
+use chrono::{Datelike, NaiveDate, Timelike};
 use day_query::DayQuery;
 use dotenv::dotenv;
 
@@ -88,6 +88,10 @@ async fn update_day_cache(lock: &mut RwLockWriteGuard<'_, Option<DayQuery>>) -> 
     }
 }
 
+fn is_out_of_date(request_date: NaiveDate, cache_date: &str) -> bool {
+    request_date > NaiveDate::parse_from_str(cache_date, "%d-%m-%Y").unwrap()
+}
+
 async fn answer(
     bot: AutoSend<Bot>,
     message: Message,
@@ -96,8 +100,7 @@ async fn answer(
     day_cache: Cache<DayQuery>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let start = Instant::now();
-    let message_dt: DateTime<Local> = DateTime::from(message.date);
-    dbg!(&message_dt);
+    let message_dt = message.date.naive_local();
 
     if let Some(sender) = if message.chat.is_group() {
         message.chat.title()
@@ -108,6 +111,7 @@ async fn answer(
     } else {
         info!("Request from unknown sender -> [{:?}]", command);
     }
+
     let reply = match command {
         Command::Help => Command::descriptions().to_string(),
         Command::Luz => {
@@ -121,7 +125,9 @@ async fn answer(
                     "Cache end's time is {end}, and the current message was sent at {}",
                     message_dt.time().hour()
                 );
-                if message_dt.time().hour() >= end as u32 {
+                if is_out_of_date(message_dt.date(), price_query.date())
+                    || message_dt.time().hour() >= end as u32
+                {
                     update_price_cache(&mut lock).await
                 } else {
                     info!("Cache hit on price data");
