@@ -1,7 +1,7 @@
 use std::{error::Error, sync::Arc, time::Instant};
 
 use cache::Cache;
-use chrono::{Datelike, NaiveDate, Timelike};
+use chrono::{Datelike, Duration, NaiveDate, Timelike};
 use day_query::DayQuery;
 use dotenv::dotenv;
 
@@ -100,7 +100,7 @@ async fn answer(
     day_cache: Cache<DayQuery>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let start = Instant::now();
-    let message_dt = message.date.naive_local();
+    let message_dt = message.date.naive_utc() + Duration::hours(2);
 
     if let Some(sender) = if message.chat.is_group() {
         message.chat.title()
@@ -121,12 +121,13 @@ async fn answer(
             } else {
                 let price_query = lock.as_ref().unwrap();
                 let (_, end) = price_query.hour().unwrap();
+                let message_hour = message_dt.time().hour();
                 info!(
                     "Cache end's time is {end}, and the current message was sent at {}",
-                    message_dt.time().hour()
+                    message_hour
                 );
                 if is_out_of_date(message_dt.date(), price_query.date())
-                    || message_dt.time().hour() >= end as u32
+                    || message_hour >= end as u32
                 {
                     update_price_cache(&mut lock).await
                 } else {
