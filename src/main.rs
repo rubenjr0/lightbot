@@ -141,15 +141,14 @@ async fn answer(
             if lock.is_none() {
                 update_day_cache(&mut lock).await
             } else {
-                let day_query = lock.as_ref().unwrap();
-                let day_date = NaiveDate::parse_from_str(day_query.date(), "%d-%m-%Y")
-                    .unwrap()
-                    .day();
-                if message_dt.day() > day_date {
+                let cache_query = lock.as_ref().unwrap();
+                let cache_date = NaiveDate::parse_from_str(cache_query.date(), "%d-%m-%Y")
+                    .unwrap();
+                if message_dt.date() > cache_date {
                     update_day_cache(&mut lock).await
                 } else {
                     info!("Cache hit on day data");
-                    day_query.to_string()
+                    cache_date.to_string()
                 }
             }
         }
